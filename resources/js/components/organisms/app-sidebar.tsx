@@ -1,4 +1,3 @@
-import { index } from '@/actions/App/Http/Controllers/Feeders/SilageController'
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +13,8 @@ import { Link } from '@inertiajs/react'
 import AppLogo from './app-logo'
 import { NavMain } from './nav-main'
 import { NavUser } from '../molecules/nav-user'
+import { index as fatteningIndex } from '@/routes/fattening'
+import { index as silageIndex } from '@/routes/silage'
 
 const mainNavItems: NavItem[] = [
   {
@@ -22,7 +23,7 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: 'Silase',
-    href: index(),
+    href: silageIndex(),
   },
   {
     title: 'Konsentrat Breeding',
@@ -30,7 +31,7 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: 'Konsentrat Fattening',
-    href: '#',
+    href: fatteningIndex(),
   },
   {
     title: 'Complete Feed',

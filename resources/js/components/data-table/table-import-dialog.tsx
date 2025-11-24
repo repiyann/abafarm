@@ -17,7 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { showSubmittedData } from '@/lib/show-submitted-data'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -37,11 +36,13 @@ const formSchema = z.object({
 type TableImportDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onImport: (files: FileList) => Promise<void> | void
 }
 
 export function TableImportDialog({
   open,
   onOpenChange,
+  onImport,
 }: TableImportDialogProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,18 +51,10 @@ export function TableImportDialog({
 
   const fileRef = form.register('file')
 
-  const onSubmit = () => {
-    const file = form.getValues('file')
-
-    if (file && file[0]) {
-      const fileDetails = {
-        name: file[0].name,
-        size: file[0].size,
-        type: file[0].type,
-      }
-      showSubmittedData(fileDetails, 'You have imported the following file:')
-    }
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    await onImport(values.file)
     onOpenChange(false)
+    form.reset()
   }
 
   return (
@@ -75,9 +68,7 @@ export function TableImportDialog({
       <DialogContent className="gap-2 sm:max-w-sm">
         <DialogHeader className="text-start">
           <DialogTitle>Import Data</DialogTitle>
-          <DialogDescription>
-            Import data dari file CSV.
-          </DialogDescription>
+          <DialogDescription>Import data dari file CSV.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form id="task-import-form" onSubmit={form.handleSubmit(onSubmit)}>

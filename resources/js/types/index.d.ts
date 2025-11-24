@@ -42,37 +42,40 @@ export interface User {
   [key: string]: unknown // This allows for additional properties...
 }
 
-export interface SilageProps {
-    id: number;
-    name: string;
-    from: string;
-    quantity: number;
-    buy_at: string; // ISO timestamp
-    created_at?: string;
-    updated_at?: string;
+export interface FeedsProps {
+  id: number
+  name: string
+  from: string
+  quantity: number
+  price: number
+  buy_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface PaginationLink {
-    url: string | null;
-    label: string;
-    page: number | null;
-    active: boolean;
+  url: string | null
+  label: string
+  page: number | null
+  active: boolean
 }
 
 export interface PaginatedResponse<T> {
-    current_page: number;
-    data: T[];
-    first_page_url: string;
-    from: number | null;
-    last_page: number;
-    last_page_url: string;
-    links: PaginationLink[];
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number | null;
-    total: number;
+  current_page: number
+  data: T[]
+  first_page_url: string
+  from: number | null
+  last_page: number
+  last_page_url: string
+  links: PaginationLink[]
+  next_page_url: string | null
+  path: string
+  per_page: number
+  prev_page_url: string | null
+  to: number | null
+  total: number
 }
 
-export type SilagePaginatedResponse = PaginatedResponse<Silage>;
+export type SilagePaginatedResponse = PaginatedResponse<Silage>
+
+export type TableDialogType = 'create' | 'update' | 'delete' | 'import'

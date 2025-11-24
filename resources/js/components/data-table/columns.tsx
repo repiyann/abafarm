@@ -1,11 +1,10 @@
-import { DataTableRowActions } from '@/components/data-table/table-row-actions'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { SilageProps } from '@/types'
+import { FeedsProps } from '@/types'
 import { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDown } from 'lucide-react'
 
-export const columns: ColumnDef<SilageProps>[] = [
+export const columns: ColumnDef<FeedsProps>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -35,7 +34,7 @@ export const columns: ColumnDef<SilageProps>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
-        Name
+        Nama Pakan
         <ArrowUpDown />
       </Button>
     ),
@@ -45,7 +44,15 @@ export const columns: ColumnDef<SilageProps>[] = [
   },
   {
     accessorKey: 'from',
-    header: 'From',
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Sumber / Asal
+        <ArrowUpDown />
+      </Button>
+    ),
     cell: ({ row }) => <div className="capitalize">{row.getValue('from')}</div>,
   },
   {
@@ -55,11 +62,11 @@ export const columns: ColumnDef<SilageProps>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
-        Quantity
+        Jumlah
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => <div>{row.getValue('quantity')}</div>,
+    cell: ({ row }) => <div>{row.getValue('quantity')} kg</div>,
   },
   {
     accessorKey: 'price',
@@ -68,7 +75,7 @@ export const columns: ColumnDef<SilageProps>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
-        Price
+        Harga
         <ArrowUpDown />
       </Button>
     ),
@@ -85,7 +92,7 @@ export const columns: ColumnDef<SilageProps>[] = [
   },
   {
     accessorKey: 'buy_at',
-    header: () => <div>Purchased</div>,
+    header: () => <div>Tanggal Pembelian</div>,
     cell: ({ row }) => {
       const value = row.getValue('buy_at') as string
       const date = new Date(value)
@@ -99,10 +106,5 @@ export const columns: ColumnDef<SilageProps>[] = [
 
       return <div className="text-sm text-muted-foreground">{formatted}</div>
     },
-  },
-  {
-    id: 'actions',
-    header: () => <div>Aksi</div>,
-    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

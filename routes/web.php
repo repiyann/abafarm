@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Feeders\SilageController;
+use App\Http\Controllers\Feeders\FatteningController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -13,13 +14,26 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+        return Inertia::render('dashboard/index');
     })->name('dashboard');
 
-    Route::get('/silages', [SilageController::class, 'index'])->name('silages.index');
-    Route::post('/silages', [SilageController::class, 'store'])->name('silages.store');
-    Route::delete('/silages/:id', [SilageController::class, 'destroy'])->name('silages.destroy');
-    Route::delete('/silages/bulk-delete', [SilageController::class, 'bulkDestroy'])->name('silages.bulk-destroy');
+    Route::prefix('silage')->name('silage.')->group(function () {
+        Route::get('/', [SilageController::class, 'index'])->name('index');
+        Route::post('/', [SilageController::class, 'store'])->name('store');
+        Route::post('/import', [SilageController::class, 'import'])->name('import');
+        Route::delete('/bulk-destroy', [SilageController::class, 'bulkDestroy'])->name('bulkDestroy');
+        Route::put('/{silage}', [SilageController::class, 'update'])->name('update');
+        Route::delete('/{silage}', [SilageController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('fattening')->name('fattening.')->group(function () {
+        Route::get('/', [FatteningController::class, 'index'])->name('index');
+        Route::post('/', [FatteningController::class, 'store'])->name('store');
+        Route::post('/import', [FatteningController::class, 'import'])->name('import');
+        Route::delete('/bulk-destroy', [FatteningController::class, 'bulkDestroy'])->name('bulkDestroy');
+        Route::put('/{fattening}', [FatteningController::class, 'update'])->name('update');
+        Route::delete('/{fattening}', [FatteningController::class, 'destroy'])->name('destroy');
+    });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

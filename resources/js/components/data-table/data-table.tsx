@@ -1,15 +1,10 @@
 'use client'
 
+import { DataTableRowActions } from '@/components/data-table/table-row-actions'
 import { ConfirmDialog } from '@/components/molecules/confirm-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -33,35 +28,38 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { cn, getPageNumbers, sleep } from '@/lib/utils'
-import { PaginatedResponse } from '@/types'
+import { cn, getPageNumbers } from '@/lib/utils'
+import { FeedsProps, PaginatedResponse } from '@/types'
 import { router } from '@inertiajs/react'
 import {
-  ColumnDef,
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   PaginationState,
+  Row,
   SortingState,
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table'
-import { AlertTriangle, ChevronDown, Download, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Download, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-import { bulkDestroy } from '@/actions/App/Http/Controllers/Feeders/SilageController'
+import { columns } from './columns'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: PaginatedResponse<TData>
-}
-
-export function DataTable<TData, TValue>({
-  columns,
+export function DataTable({
   data,
-}: DataTableProps<TData, TValue>) {
+  onEdit,
+  onDelete,
+  onBulkDelete,
+  onExport,
+}: {
+  data: PaginatedResponse<FeedsProps>
+  onEdit: (row: FeedsProps) => void
+  onDelete: (row: FeedsProps) => void
+  onBulkDelete: (rows: FeedsProps[]) => void
+  onExport: (rows: FeedsProps[]) => void
+}) {
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
     {},
   )
@@ -82,9 +80,23 @@ export function DataTable<TData, TValue>({
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null)
   const CONFIRM_WORD = 'HAPUS'
 
+  const fatteningColumns = [
+    ...columns.filter((c) => c.id !== 'actions'),
+    {
+      id: 'actions',
+      header: () => <div>Aksi</div>,
+      cell: ({ row }: { row: Row<FeedsProps> }) => (
+        <DataTableRowActions
+          onEdit={() => onEdit(row.original)}
+          onDelete={() => onDelete(row.original)}
+        />
+      ),
+    },
+  ]
+
   const table = useReactTable({
     data: data.data,
-    columns,
+    columns: fatteningColumns,
     rowCount: data.total,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -197,44 +209,6 @@ export function DataTable<TData, TValue>({
     }
   }, [selectedCount])
 
-  function handleBulkExport() {
-    const selectedTasks = selectedRows.map((row) => row.original as TData)
-    toast.promise(sleep(2000), {
-      loading: `Mengekspor data...`,
-      success: () => {
-        table.resetRowSelection()
-        return `Berhasil mengekspor ${selectedTasks.length} data ke CSV.`
-      },
-      error: 'Gagal mengekspor',
-    })
-    table.resetRowSelection()
-  }
-
-  function handleDelete() {
-    if (value.trim() !== CONFIRM_WORD) {
-      toast.error(`Tolong ketik "${CONFIRM_WORD}" untuk mengonfirmasi.`)
-      return
-    }
-
-    setShowDeleteConfirm(false)
-
-    const selectedIds = selectedRows.map((row) => (row.original as TData).id)
-
-    router.delete(bulkDestroy(), {
-      data: { ids: selectedIds },
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success(`Berhasil menghapus ${selectedRows.length} data.`)
-        table.resetRowSelection()
-        setValue('')
-      },
-      onError: (errors) => {
-        toast.error('Gagal menghapus data.')
-        console.error(errors)
-      },
-    })
-  }
-
   return (
     <div className="w-full">
       <div className="flex items-center pb-4">
@@ -244,32 +218,6 @@ export function DataTable<TData, TValue>({
           value={searchValue}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Kolom <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
@@ -496,7 +444,9 @@ export function DataTable<TData, TValue>({
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handleBulkExport()}
+                  onClick={() =>
+                    onExport(selectedRows.map((row) => row.original))
+                  }
                   className="size-8"
                   aria-label={`Ekspor data`}
                   title={`Ekspor data`}
@@ -535,7 +485,13 @@ export function DataTable<TData, TValue>({
       <ConfirmDialog
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
-        handleConfirm={handleDelete}
+        handleConfirm={async () => {
+          const rows = selectedRows.map((row) => row.original)
+          await Promise.resolve(onBulkDelete(rows))
+          setShowDeleteConfirm(false)
+          table.resetRowSelection()
+          setValue('')
+        }}
         disabled={value.trim() !== CONFIRM_WORD}
         title={
           <span className="text-destructive">

@@ -22,7 +22,7 @@ import {
   index,
   store,
   update,
-} from '@/routes/silage'
+} from '@/routes/fattening'
 import {
   BreadcrumbItem,
   FeedsProps,
@@ -37,12 +37,12 @@ import { DataTable } from '../../components/data-table/data-table'
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'Silase',
+    title: 'Konsentrat Fattening',
     href: index().url,
   },
 ]
 
-export default function Silage({
+export default function Fattening({
   paginatedData,
 }: {
   paginatedData: PaginatedResponse<FeedsProps>
@@ -100,16 +100,12 @@ export default function Silage({
     if (!file) return
     const fd = new FormData()
     fd.append('file', file)
-    toast.promise(
-      fetch(importMethod().url, { method: 'POST', body: fd }).then((r) => {
-        if (!r.ok) throw new Error('Import gagal')
-      }),
-      {
-        loading: 'Mengimpor data...',
-        success: 'Berhasil mengimpor data.',
-        error: 'Gagal mengimpor.',
-      },
-    )
+    router.post(importMethod().url, fd, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => toast.success('Berhasil mengimpor data.'),
+      onError: () => toast.error('Gagal mengimpor data.'),
+    })
   }
 
   const isEdit = open === 'update'
@@ -123,10 +119,10 @@ export default function Silage({
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Silase
+              Konsentrat Fattening
             </h2>
             <p className="text-muted-foreground">
-              Ini adalah halaman silase.
+              Ini adalah halaman konsentrat fattening.
             </p>
           </div>
           <div className="flex gap-2">
@@ -200,7 +196,7 @@ export default function Silage({
                       defaultValue={
                         isEdit && currentRow
                           ? currentRow.name
-                          : 'silase'
+                          : 'konsentrat fattening'
                       }
                       readOnly
                       className="cursor-not-allowed bg-muted"
