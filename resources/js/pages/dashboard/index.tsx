@@ -2,8 +2,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import AppLayout from '@/layouts/app-layout'
 import { cn } from '@/lib/utils'
-import { dashboard } from '@/routes'
-import { type BreadcrumbItem } from '@/types'
 import { Head } from '@inertiajs/react'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 
@@ -58,16 +56,9 @@ const data = [
   },
 ]
 
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Dashboard',
-    href: dashboard().url,
-  },
-]
-
 export default function Dashboard() {
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
+    <AppLayout>
       <Head title="Dashboard" />
       <main data-layout={'auto'} className={cn('space-y-4 px-4 py-6')}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

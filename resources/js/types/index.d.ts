@@ -44,11 +44,11 @@ export interface User {
 
 export interface FeedsProps {
   id: number
-  name: string
-  from: string
-  quantity: number
-  price: number
-  buy_at: string
+  nama_pakan: string
+  asal: string
+  jumlah: number
+  harga: number
+  tanggal_beli: string
   created_at?: string
   updated_at?: string
 }

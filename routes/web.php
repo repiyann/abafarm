@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\Feeders\SilageController;
 use App\Http\Controllers\Feeders\FatteningController;
+use App\Http\Controllers\PembelianController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -33,6 +34,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/bulk-destroy', [FatteningController::class, 'bulkDestroy'])->name('bulkDestroy');
         Route::put('/{fattening}', [FatteningController::class, 'update'])->name('update');
         Route::delete('/{fattening}', [FatteningController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('pembelian-pakan')->name('pembelian.')->group(function () {
+        Route::get('/', [PembelianController::class, 'index'])->name('index');
+        Route::post('/', [PembelianController::class, 'store'])->name('store');
+        Route::post('/import', [PembelianController::class, 'import'])->name('import');
+        Route::delete('/bulk-destroy', [PembelianController::class, 'bulkDestroy'])->name('bulkDestroy');
+        Route::put('/{pembelian}', [PembelianController::class, 'update'])->name('update');
+        Route::delete('/{pembelian}', [PembelianController::class, 'destroy'])->name('destroy');
     });
 });
 

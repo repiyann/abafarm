@@ -1,9 +1,18 @@
 import InputError from '@/components/atoms/input-error'
+import { DataTable } from '@/components/data-table/data-table'
 import { TableImportDialog } from '@/components/data-table/table-import-dialog'
 import { ConfirmDialog } from '@/components/molecules/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Sheet,
   SheetClose,
@@ -19,30 +28,16 @@ import {
   bulkDestroy,
   destroy,
   importMethod,
-  index,
   store,
   update,
-} from '@/routes/silage'
-import {
-  BreadcrumbItem,
-  FeedsProps,
-  PaginatedResponse,
-  TableDialogType,
-} from '@/types'
+} from '@/routes/pembelian'
+import { FeedsProps, PaginatedResponse, TableDialogType } from '@/types'
 import { Form, Head, router } from '@inertiajs/react'
-import { Download, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { DataTable } from '../../components/data-table/data-table'
+import { ProductChart } from './chart'
 
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Silase',
-    href: index().url,
-  },
-]
-
-export default function Silage({
+export default function Pembelian({
   paginatedData,
 }: {
   paginatedData: PaginatedResponse<FeedsProps>
@@ -62,16 +57,16 @@ export default function Silage({
 
   function handleExport(rows: FeedsProps[]) {
     if (!rows.length) return
-    const header = ['name', 'from', 'quantity', 'price', 'buy_at']
+    const header = ['nama_pakan', 'asal', 'jumlah', 'harga', 'tanggal_beli']
     const csv = [
       header.join(','),
       ...rows.map((r) =>
         [
-          r.name,
-          r.from,
-          r.quantity,
-          r.price,
-          r.buy_at?.slice(0, 10) ?? '',
+          r.nama_pakan,
+          r.asal,
+          r.jumlah,
+          r.harga,
+          r.tanggal_beli?.slice(0, 10) ?? '',
         ].join(','),
       ),
     ].join('\n')
@@ -112,34 +107,25 @@ export default function Silage({
   const isCreate = open === 'create'
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Fattening Dashboard" />
+    <AppLayout>
+      <Head title="Pembelian Pakan" />
 
       <main className={cn('flex flex-1 flex-col gap-4 px-4 py-6 sm:gap-6')}>
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Silase</h2>
-            <p className="text-muted-foreground">Ini adalah halaman silase.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="space-x-1"
-              onClick={() => setOpen('import')}
-            >
-              <span>Import</span> <Download size={18} />
-            </Button>
-            <Button className="space-x-1" onClick={() => setOpen('create')}>
-              <span>Tambah</span> <Plus size={18} />
-            </Button>
-          </div>
+        <div>
+          <h2 className="text-4xl font-bold tracking-tight">Pembelian Pakan</h2>
+          <p className="text-2xl text-muted-foreground">
+            Ini adalah halaman data pembelian pakan.
+          </p>
         </div>
+
+        <ProductChart />
         <DataTable
           data={paginatedData}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}
           onExport={handleExport}
+          setOpen={setOpen}
         />
       </main>
 
@@ -159,10 +145,12 @@ export default function Silage({
           }
         }}
       >
-        <SheetContent className="flex flex-col">
+        <SheetContent className="sm:max-w-md">
           <SheetHeader className="text-start">
-            <SheetTitle>{isEdit ? 'Edit Data' : 'Tambah Data'}</SheetTitle>
-            <SheetDescription>
+            <SheetTitle className="text-2xl">
+              {isEdit ? 'Edit Data' : 'Tambah Data'}
+            </SheetTitle>
+            <SheetDescription className="text-xl">
               {isEdit
                 ? 'Ubah data lalu simpan.'
                 : 'Tambahkan data baru ke dalam tabel.'}
@@ -185,87 +173,137 @@ export default function Silage({
                 <div className="grid gap-6">
                   {/* Name */}
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Nama Pakan</Label>
-                    <Input
-                      id="name"
-                      name="name"
+                    <Label className="text-lg" htmlFor="nama_pakan">
+                      Nama Pakan
+                    </Label>
+                    <Select
+                      name="nama_pakan"
                       defaultValue={
-                        isEdit && currentRow ? currentRow.name : 'silase'
+                        isEdit && currentRow ? currentRow.nama_pakan : undefined
                       }
-                      readOnly
-                      className="cursor-not-allowed bg-muted"
-                    />
-                    <InputError message={errors.name} />
+                    >
+                      <SelectTrigger className="h-11 text-lg placeholder:text-lg">
+                        <SelectValue placeholder="Pilih nama pakan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem className="text-lg" value="Silase">
+                            Silase
+                          </SelectItem>
+                          <SelectItem
+                            className="text-lg"
+                            value="Konsentrat Fattening"
+                          >
+                            Konsentrat Fattening
+                          </SelectItem>
+                          <SelectItem
+                            className="text-lg"
+                            value="Konsentrat Breeding"
+                          >
+                            Konsentrat Breeding
+                          </SelectItem>
+                          <SelectItem className="text-lg" value="Complete Feed">
+                            Complete Feed
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <InputError message={errors.nama_pakan} />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="from">Sumber / Asal</Label>
+                    <Label className="text-lg" htmlFor="asal">
+                      Sumber / Asal
+                    </Label>
                     <Input
-                      id="from"
-                      name="from"
+                      id="asal"
+                      name="asal"
+                      className="h-11 placeholder:text-lg"
+                      style={{ fontSize: 18 }}
                       placeholder="Contoh: PT Pakan Sejahtera"
                       required
-                      defaultValue={isEdit && currentRow ? currentRow.from : ''}
+                      defaultValue={isEdit && currentRow ? currentRow.asal : ''}
                     />
-                    <InputError message={errors.from} />
+                    <InputError message={errors.asal} />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="quantity">Jumlah (kg)</Label>
+                    <Label className="text-lg" htmlFor="jumlah">
+                      Jumlah (kg)
+                    </Label>
                     <Input
-                      id="quantity"
-                      name="quantity"
+                      id="jumlah"
+                      name="jumlah"
                       type="number"
                       min={0}
                       step="0.01"
+                      className="h-11 placeholder:text-lg"
+                      style={{ fontSize: 18 }}
                       placeholder="0"
                       required
                       defaultValue={
-                        isEdit && currentRow ? currentRow.quantity : undefined
+                        isEdit && currentRow ? currentRow.jumlah : undefined
                       }
                     />
-                    <InputError message={errors.quantity} />
+                    <InputError message={errors.jumlah} />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="price">Harga (Rp)</Label>
+                    <Label className="text-lg" htmlFor="harga">
+                      Harga (Rp)
+                    </Label>
                     <Input
-                      id="price"
-                      name="price"
+                      id="harga"
+                      name="harga"
                       type="number"
                       min={0}
                       step="1"
+                      className="h-11 placeholder:text-lg"
+                      style={{ fontSize: 18 }}
                       placeholder="0"
                       required
                       defaultValue={
-                        isEdit && currentRow ? currentRow.price : undefined
+                        isEdit && currentRow ? currentRow.harga : undefined
                       }
                     />
-                    <InputError message={errors.price} />
+                    <InputError message={errors.harga} />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="buy_at">Tanggal Pembelian</Label>
+                    <Label className="text-lg" htmlFor="tanggal_beli">
+                      Tanggal Pembelian
+                    </Label>
                     <Input
-                      id="buy_at"
-                      name="buy_at"
+                      id="tanggal_beli"
+                      name="tanggal_beli"
                       type="date"
+                      className="h-11 placeholder:text-lg"
+                      style={{ fontSize: 18 }}
                       required
                       defaultValue={
                         isEdit && currentRow
-                          ? currentRow.buy_at?.slice(0, 10)
+                          ? currentRow.tanggal_beli?.slice(0, 10)
                           : undefined
                       }
                     />
-                    <InputError message={errors.buy_at} />
+                    <InputError message={errors.tanggal_beli} />
                   </div>
                 </div>
 
                 <SheetFooter className="gap-2">
                   <SheetClose asChild>
-                    <Button variant="outline">Tutup</Button>
+                    <Button
+                      variant="outline"
+                      className="cursor-pointer text-lg"
+                    >
+                      Tutup
+                    </Button>
                   </SheetClose>
-                  <Button type="submit" disabled={processing}>
+                  <Button
+                    type="submit"
+                    disabled={processing}
+                    className="cursor-pointer text-lg"
+                  >
                     {processing
                       ? isEdit
                         ? 'Menyimpan...'
@@ -285,7 +323,7 @@ export default function Silage({
         open={open === 'delete'}
         onOpenChange={(open) => setOpen(open ? 'delete' : null)}
         destructive
-        title={`Hapus data "${currentRow?.name}"?`}
+        title={`Hapus data "${currentRow?.nama_pakan}"?`}
         desc="Tindakan ini tidak dapat dibatalkan."
         confirmText="Hapus"
         handleConfirm={() => {

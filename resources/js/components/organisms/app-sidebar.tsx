@@ -8,13 +8,14 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { dashboard } from '@/routes'
-import { type NavItem } from '@/types'
-import { Link } from '@inertiajs/react'
-import AppLogo from './app-logo'
-import { NavMain } from './nav-main'
-import { NavUser } from '../molecules/nav-user'
 import { index as fatteningIndex } from '@/routes/fattening'
 import { index as silageIndex } from '@/routes/silage'
+import { type NavItem } from '@/types'
+import { Link } from '@inertiajs/react'
+import { NavUser } from '../molecules/nav-user'
+import AppLogo from './app-logo'
+import { NavMain } from './nav-main'
+import { index } from '@/routes/pembelian'
 
 const mainNavItems: NavItem[] = [
   {
@@ -22,20 +23,20 @@ const mainNavItems: NavItem[] = [
     href: dashboard(),
   },
   {
-    title: 'Silase',
+    title: 'Penentuan Pakan',
     href: silageIndex(),
   },
   {
-    title: 'Konsentrat Breeding',
+    title: 'Pemberian Pakan',
     href: '#',
   },
   {
-    title: 'Konsentrat Fattening',
+    title: 'Pembelian Pakan',
+    href: index(),
+  },
+  {
+    title: 'Sisa Pakan',
     href: fatteningIndex(),
-  },
-  {
-    title: 'Complete Feed',
-    href: '#',
   },
 ]
 

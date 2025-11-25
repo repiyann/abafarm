@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn, getPageNumbers } from '@/lib/utils'
-import { FeedsProps, PaginatedResponse } from '@/types'
+import { FeedsProps, PaginatedResponse, TableDialogType } from '@/types'
 import { router } from '@inertiajs/react'
 import {
   ColumnFiltersState,
@@ -43,9 +43,10 @@ import {
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table'
-import { AlertTriangle, Download, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Download, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { columns } from './columns'
+import { DataTableFacetedFilter } from './faceted-filter'
 
 export function DataTable({
   data,
@@ -53,12 +54,14 @@ export function DataTable({
   onDelete,
   onBulkDelete,
   onExport,
+  setOpen,
 }: {
   data: PaginatedResponse<FeedsProps>
   onEdit: (row: FeedsProps) => void
   onDelete: (row: FeedsProps) => void
   onBulkDelete: (rows: FeedsProps[]) => void
   onExport: (rows: FeedsProps[]) => void
+  setOpen: (value: TableDialogType | null) => void
 }) {
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
     {},
@@ -84,7 +87,7 @@ export function DataTable({
     ...columns.filter((c) => c.id !== 'actions'),
     {
       id: 'actions',
-      header: () => <div>Aksi</div>,
+      header: () => <div className="text-lg">Aksi</div>,
       cell: ({ row }: { row: Row<FeedsProps> }) => (
         <DataTableRowActions
           onEdit={() => onEdit(row.original)}
@@ -98,6 +101,7 @@ export function DataTable({
     data: data.data,
     columns: fatteningColumns,
     rowCount: data.total,
+    pageCount: data.last_page,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -121,6 +125,58 @@ export function DataTable({
     },
   })
 
+  // Flag so initial URL hydration does not immediately trigger fetch twice.
+  const didHydrateRef = useRef(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    // Sorting
+    const sortBy = params.get('sort_by')
+    const sortOrder = params.get('sort_order')
+    if (sortBy) {
+      setSorting([{ id: sortBy, desc: sortOrder === 'desc' }])
+    }
+
+    // Filters (nama_pakan=Silase,Konsentrat Fattening)
+    const namaParam = params.get('nama_pakan')
+    if (namaParam) {
+      const parts = namaParam
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      if (parts.length) {
+        setColumnFilters((prev) => [
+          ...prev.filter((f) => f.id !== 'nama_pakan'),
+          { id: 'nama_pakan', value: parts },
+        ])
+      }
+    }
+    // Search term
+    const searchParam = params.get('search')
+    if (searchParam) {
+      setSearchValue(searchParam)
+    }
+
+    // Pagination (page & per_page) – page is 1-based in backend
+    const pageParam = params.get('page')
+    const perPageParam = params.get('per_page')
+    const serverPageIndex = pageParam
+      ? Math.max(1, Number(pageParam)) - 1
+      : data?.current_page
+        ? data.current_page - 1
+        : 0
+    const serverPageSize = perPageParam
+      ? Number(perPageParam)
+      : (data?.per_page ?? 10)
+
+    setPagination({ pageIndex: serverPageIndex, pageSize: serverPageSize })
+
+    didHydrateRef.current = true
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     const serverPageIndex = data?.current_page ? data.current_page - 1 : 0
     const serverPageSize = data?.per_page ?? 10
@@ -135,25 +191,38 @@ export function DataTable({
     })
   }, [data?.current_page, data?.per_page])
 
-  useEffect(() => {
-    if (sorting.length > 0) {
-      const sort = sorting[0]
-      router.get(
-        data.path,
-        {
-          page: 1,
-          per_page: table.getState().pagination.pageSize,
-          sort_by: sort.id,
-          sort_order: sort.desc ? 'desc' : 'asc',
-          search: searchValue || undefined,
-        },
-        {
-          preserveState: true,
-          preserveScroll: true,
-        },
-      )
+  function getFilterParams() {
+    const namaFilter = columnFilters.find((f) => f.id === 'nama_pakan')
+      ?.value as string[] | undefined
+    return {
+      nama_pakan:
+        namaFilter && namaFilter.length
+          ? namaFilter.join(',') // e.g. "Silase,Konsentrat Fattening"
+          : undefined,
     }
-  }, [sorting])
+  }
+
+  useEffect(() => {
+    if (!didHydrateRef.current) return
+    // When sort or filters change, reset to first page but keep other params.
+    router.get(
+      data.path,
+      {
+        page: 1,
+        per_page: table.getState().pagination.pageSize,
+        sort_by: sorting[0]?.id,
+        sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+        search: searchValue || undefined,
+        ...getFilterParams(),
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+      },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sorting, columnFilters])
 
   function handleSearch(value: string) {
     setSearchValue(value)
@@ -171,6 +240,7 @@ export function DataTable({
           search: value || undefined,
           sort_by: sorting[0]?.id,
           sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+          ...getFilterParams(),
         },
         {
           preserveState: true,
@@ -209,15 +279,74 @@ export function DataTable({
     }
   }, [selectedCount])
 
+  const pakans = [
+    {
+      label: 'Silase',
+      value: 'Silase' as const,
+    },
+    {
+      label: 'Konsentrat Fattening',
+      value: 'Konsentrat Fattening' as const,
+    },
+    {
+      label: 'Konsentrat Breeding',
+      value: 'Konsentrat Breeding' as const,
+    },
+    {
+      label: 'Complete Feed',
+      value: 'Complete Feed' as const,
+    },
+  ]
+
+  const filters = [
+    {
+      columnId: 'nama_pakan',
+      title: 'Nama Pakan',
+      options: pakans,
+    },
+  ]
+
   return (
     <div className="w-full">
-      <div className="flex items-center pb-4">
-        <Input
-          placeholder="Cari data..."
-          onChange={(e) => handleSearch(e.target.value)}
-          value={searchValue}
-          className="max-w-sm"
-        />
+      <div className="flex items-center justify-between pb-4">
+        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2">
+          <Input
+            placeholder="Cari data..."
+            onChange={(e) => handleSearch(e.target.value)}
+            value={searchValue}
+            style={{ fontSize: 18 }}
+            className="h-11 max-w-md placeholder:text-lg"
+          />
+          <div className="flex gap-x-2">
+            {filters.map((filter) => {
+              const column = table.getColumn(filter.columnId)
+              if (!column) return null
+              return (
+                <DataTableFacetedFilter
+                  key={filter.columnId}
+                  column={column}
+                  title={filter.title}
+                  options={filter.options}
+                />
+              )
+            })}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="cursor-pointer space-x-1 text-lg"
+            onClick={() => setOpen('import')}
+          >
+            <span>Import</span> <Download size={18} />
+          </Button>
+          <Button
+            className="cursor-pointer space-x-1 text-lg"
+            onClick={() => setOpen('create')}
+          >
+            <span>Tambah</span> <Plus size={18} />
+          </Button>
+        </div>
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
@@ -260,7 +389,7 @@ export function DataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-4xl"
                 >
                   Tidak ada hasil.
                 </TableCell>
@@ -276,27 +405,40 @@ export function DataTable({
             onValueChange={(value) => {
               const per_page = Number(value)
               table.setPageSize(per_page)
-              router.get(data.path, {
-                per_page,
-                page: 1,
-                search: searchValue || undefined,
-                sort_by: sorting[0]?.id,
-                sort_order: sorting[0]?.desc ? 'desc' : 'asc',
-              })
+              router.get(
+                data.path,
+                {
+                  per_page,
+                  page: 1,
+                  search: searchValue || undefined,
+                  sort_by: sorting[0]?.id,
+                  sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+                  ...getFilterParams(),
+                },
+                {
+                  preserveScroll: true,
+                  preserveState: true,
+                  replace: true,
+                },
+              )
             }}
           >
-            <SelectTrigger className="h-8 w-[70px]">
+            <SelectTrigger className="h-8 w-[70px] text-base placeholder:text-base">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
               {[10, 20, 30, 40, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
+                <SelectItem
+                  className="text-base"
+                  key={pageSize}
+                  value={`${pageSize}`}
+                >
                   {pageSize}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="hidden text-sm font-medium sm:block">
+          <p className="hidden text-base font-medium sm:block">
             Baris per halaman
           </p>
         </div>
@@ -306,14 +448,19 @@ export function DataTable({
               disabled={data.prev_page_url === null}
               size="sm"
               variant="outline"
-              className="cursor-pointer"
+              className="cursor-pointer text-base"
               onClick={() => {
-                router.get(data.prev_page_url ?? '#', {
-                  per_page: table.getState().pagination.pageSize,
-                  search: searchValue || undefined,
-                  sort_by: sorting[0]?.id,
-                  sort_order: sorting[0]?.desc ? 'desc' : 'asc',
-                })
+                router.get(
+                  data.prev_page_url ?? '#',
+                  {
+                    per_page: table.getState().pagination.pageSize,
+                    search: searchValue || undefined,
+                    sort_by: sorting[0]?.id,
+                    sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+                    ...getFilterParams(),
+                  },
+                  { preserveScroll: true, preserveState: true, replace: true },
+                )
               }}
             >
               Sebelumnya
@@ -321,17 +468,26 @@ export function DataTable({
             {getPageNumbers(currentPage, pageCount).map((page, index) =>
               typeof page === 'number' ? (
                 <Button
-                  className="h-8 w-8 cursor-pointer p-0"
+                  className="h-8 w-8 cursor-pointer p-0 text-base"
                   key={index}
                   disabled={currentPage === page}
                   onClick={() => {
-                    router.get(data.path, {
-                      page: page + 1,
-                      per_page: table.getState().pagination.pageSize,
-                      search: searchValue || undefined,
-                      sort_by: sorting[0]?.id,
-                      sort_order: sorting[0]?.desc ? 'desc' : 'asc',
-                    })
+                    router.get(
+                      data.path,
+                      {
+                        page: page + 1,
+                        per_page: table.getState().pagination.pageSize,
+                        search: searchValue || undefined,
+                        sort_by: sorting[0]?.id,
+                        sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+                        ...getFilterParams(),
+                      },
+                      {
+                        preserveScroll: true,
+                        preserveState: true,
+                        replace: true,
+                      },
+                    )
                   }}
                   size="sm"
                   variant={currentPage === page ? 'default' : 'outline'}
@@ -348,14 +504,23 @@ export function DataTable({
               disabled={data.next_page_url === null}
               size="sm"
               variant="outline"
-              className="cursor-pointer"
+              className="cursor-pointer text-base"
               onClick={() => {
-                router.get(data.next_page_url ?? '#', {
-                  per_page: table.getState().pagination.pageSize,
-                  search: searchValue || undefined,
-                  sort_by: sorting[0]?.id,
-                  sort_order: sorting[0]?.desc ? 'desc' : 'asc',
-                })
+                router.get(
+                  data.next_page_url ?? '#',
+                  {
+                    per_page: table.getState().pagination.pageSize,
+                    search: searchValue || undefined,
+                    sort_by: sorting[0]?.id,
+                    sort_order: sorting[0]?.desc ? 'desc' : 'asc',
+                    ...getFilterParams(),
+                  },
+                  {
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
+                  },
+                )
               }}
             >
               Berikutnya

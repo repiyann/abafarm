@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Fattening;
+use App\Models\Pembelian;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -28,5 +29,6 @@ class DatabaseSeeder extends Seeder
 
         Silage::factory()->count(30)->create();
         Fattening::factory()->count(30)->create();
+        Pembelian::factory()->count(100)->create();
     }
 }

@@ -28,10 +28,23 @@ export const columns: ColumnDef<FeedsProps>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'name',
+    accessorKey: 'nama_pakan',
+    // enableColumnFilter: true,
+    // filterFn: (row, id, filterValues) => {
+    //   const cell = row.getValue(id)
+    //   if (
+    //     !filterValues ||
+    //     (Array.isArray(filterValues) && filterValues.length === 0)
+    //   )
+    //     return true
+    //   return Array.isArray(filterValues)
+    //     ? filterValues.includes(cell)
+    //     : filterValues === cell
+    // },
     header: ({ column }) => (
       <Button
         variant="ghost"
+        className="text-lg"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         Nama Pakan
@@ -39,40 +52,47 @@ export const columns: ColumnDef<FeedsProps>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="font-medium">{row.getValue('name')}</div>
+      <div className="text-base font-medium">{row.getValue('nama_pakan')}</div>
     ),
   },
   {
-    accessorKey: 'from',
+    accessorKey: 'asal',
     header: ({ column }) => (
       <Button
         variant="ghost"
+        className="text-lg"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         Sumber / Asal
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => <div className="capitalize">{row.getValue('from')}</div>,
+    cell: ({ row }) => (
+      <div className="text-base capitalize">{row.getValue('asal')}</div>
+    ),
   },
   {
-    accessorKey: 'quantity',
+    accessorKey: 'jumlah',
     header: ({ column }) => (
       <Button
         variant="ghost"
+        className="text-lg"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         Jumlah
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => <div>{row.getValue('quantity')} kg</div>,
+    cell: ({ row }) => (
+      <div className="text-base">{row.getValue('jumlah')} kg</div>
+    ),
   },
   {
-    accessorKey: 'price',
+    accessorKey: 'harga',
     header: ({ column }) => (
       <Button
         variant="ghost"
+        className="text-lg"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         Harga
@@ -80,21 +100,30 @@ export const columns: ColumnDef<FeedsProps>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const value = row.getValue('price') as number
+      const value = row.getValue('harga') as number
       const formatted = new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         maximumFractionDigits: 0,
       }).format(value)
 
-      return <div>{formatted}</div>
+      return <div className="text-base">{formatted}</div>
     },
   },
   {
-    accessorKey: 'buy_at',
-    header: () => <div>Tanggal Pembelian</div>,
+    accessorKey: 'tanggal_beli',
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        className="text-lg"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Tanggal Pembelian
+        <ArrowUpDown />
+      </Button>
+    ),
     cell: ({ row }) => {
-      const value = row.getValue('buy_at') as string
+      const value = row.getValue('tanggal_beli') as string
       const date = new Date(value)
       const formatted = isNaN(date.getTime())
         ? value
@@ -104,7 +133,7 @@ export const columns: ColumnDef<FeedsProps>[] = [
             day: 'numeric',
           })
 
-      return <div className="text-sm text-muted-foreground">{formatted}</div>
+      return <div className="text-base text-muted-foreground">{formatted}</div>
     },
   },
 ]
